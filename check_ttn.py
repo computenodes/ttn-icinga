@@ -13,14 +13,14 @@ import subprocess
 from datetime import datetime, timedelta
 import dateutil.parser
 import pytz
-
+import argparse
 CMD_LINE = "/usr/local/bin/ttnctl"
 STATUS_CMD = "gateways status"
 
 EXIT_OK = 0
 EXIT_WARNING = 1
 EXIT_CRITICAL = 2
-EXIT_UNKNONWN = 3
+EXIT_UNKNOWN = 3
 
 def check_status(node_id, warning_time, critical_time):
     """
@@ -32,9 +32,6 @@ def check_status(node_id, warning_time, critical_time):
     last_seen = dateutil.parser.parse(seen[:35])
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
     diff = now - last_seen
-    print now
-    print last_seen
-    print diff
     if diff < timedelta(seconds=0):
         raise TtnCheckError("Last seen in the future")
     elif diff < timedelta(seconds=warning_time):
@@ -77,3 +74,26 @@ class TtnCheckError(Exception):
         Generic error for when things go wrong
     """
     pass
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="The Things Network gateway status checker")
+    parser.add_argument(
+        "-w", "--warning", type=int, action='store', required=True,
+        help="The time to be disconnected for before generating a warning ")
+    parser.add_argument(
+        "-c", "--critical", type=int, action='store', required=True,
+        help="The time to be disconnected for before being critical")
+    parser.add_argument(
+        "-g", "--gateway", type=str, action='store', required=True,
+        help="The ID of the gateway to check")
+    args= parser.parse_args()
+    try:
+        (status, message) = check_status(args.gateway, args.warning, args.critical)
+    except TtnCheckError as e:
+        print str(e)
+        exit(EXIT_UNKNOWN)
+    
+    print message
+    exit(status)
