@@ -11,9 +11,10 @@ Contact: P.J.Basford@soton.ac.uk
 """
 import subprocess
 from datetime import datetime, timedelta
-import dateutil.parser
-import pytz
 import argparse
+import pytz
+import dateutil.parser
+
 CMD_LINE = "/usr/local/bin/ttnctl"
 STATUS_CMD = "gateways status"
 
@@ -48,9 +49,9 @@ def _get_status(node_id):
     if status == 0: #Double check exit status
         return _parse_status(output)
 
-def _run_cmd(args):
+def _run_cmd(argumentss):
     cmd = subprocess.Popen(
-        args="%s %s" %(CMD_LINE, args),
+        args="%s %s" %(CMD_LINE, argumentss),
         shell=True,
         stdout=subprocess.PIPE)
     exit_status = cmd.wait()
@@ -77,23 +78,22 @@ class TtnCheckError(Exception):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
+    PARSER = argparse.ArgumentParser(
         description="The Things Network gateway status checker")
-    parser.add_argument(
+    PARSER.add_argument(
         "-w", "--warning", type=int, action='store', required=True,
         help="The time to be disconnected for before generating a warning ")
-    parser.add_argument(
+    PARSER.add_argument(
         "-c", "--critical", type=int, action='store', required=True,
         help="The time to be disconnected for before being critical")
-    parser.add_argument(
+    PARSER.add_argument(
         "-g", "--gateway", type=str, action='store', required=True,
         help="The ID of the gateway to check")
-    args= parser.parse_args()
+    ARGS = PARSER.parse_args()
     try:
-        (status, message) = check_status(args.gateway, args.warning, args.critical)
-    except TtnCheckError as e:
-        print str(e)
+        (STATUS, MESSAGE) = check_status(ARGS.gateway, ARGS.warning, ARGS.critical)
+    except TtnCheckError as err:
+        print str(err)
         exit(EXIT_UNKNOWN)
-    
-    print message
-    exit(status)
+    print MESSAGE
+    exit(STATUS)
