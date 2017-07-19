@@ -16,6 +16,7 @@ import pytz
 import dateutil.parser
 
 CMD_LINE = "/usr/local/bin/ttnctl"
+CMD_ENV = {"HOME":"/var/lib/nagios", "USER": "nagios"}
 STATUS_CMD = "gateways status"
 
 EXIT_OK = 0
@@ -53,6 +54,7 @@ def _run_cmd(argumentss):
     cmd = subprocess.Popen(
         args="%s %s" %(CMD_LINE, argumentss),
         shell=True,
+	env=CMD_ENV,
         stdout=subprocess.PIPE)
     exit_status = cmd.wait()
     if exit_status != 0:    #Failed to run happily
