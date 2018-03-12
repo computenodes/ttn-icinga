@@ -12,6 +12,7 @@ Contact: P.J.Basford@soton.ac.uk
 import subprocess
 from datetime import datetime, timedelta
 import argparse
+import re
 import pytz
 import dateutil.parser
 
@@ -30,8 +31,9 @@ def check_status(node_id, warning_time, critical_time):
         the thresholds given
     """
     status = _get_status(node_id)
-    seen = status["Last seen"]
-    last_seen = dateutil.parser.parse(seen[:35])
+    seen_str = status["Last seen"]
+    seen = seen_str[:re.search("[A-Z]", seen_str).start()]
+    last_seen = dateutil.parser.parse(seen)
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
     diff = now - last_seen
     if diff < timedelta(seconds=0):
