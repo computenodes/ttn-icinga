@@ -1,6 +1,8 @@
 # ttn-icinga
 A simple wrapper to enable icinga to check the status of gateways in the things network (https://www.thethingsnetwork.org/)
 
+
+##These install documents are out of date
 ## Installation
 ``` sudo apt install python-pip
 sudo pip install python-dateutil
