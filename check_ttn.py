@@ -12,10 +12,12 @@ Contact: P.J.Basford@soton.ac.uk
 import subprocess
 from datetime import datetime, timedelta
 import argparse
+import re
 import pytz
 import dateutil.parser
 
 CMD_LINE = "/usr/local/bin/ttnctl"
+CMD_ENV = {"HOME":"/var/lib/nagios", "USER": "nagios"}
 STATUS_CMD = "gateways status"
 
 EXIT_OK = 0
@@ -29,8 +31,9 @@ def check_status(node_id, warning_time, critical_time):
         the thresholds given
     """
     status = _get_status(node_id)
-    seen = status["Last seen"]
-    last_seen = dateutil.parser.parse(seen[:35])
+    seen_str = status["Last seen"]
+    seen = seen_str[:re.search("[A-Z]", seen_str).start()]
+    last_seen = dateutil.parser.parse(seen)
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
     diff = now - last_seen
     if diff < timedelta(seconds=0):
@@ -46,17 +49,25 @@ def check_status(node_id, warning_time, critical_time):
 
 def _get_status(node_id):
     (status, output) = _run_cmd("%s %s" % (STATUS_CMD, node_id))
-    if status == 0: #Double check exit status
+    if status == 0:
         return _parse_status(output)
+    else:    #something went wrong
+        _parse_error(output)
+        raise TtnCheckError("Unknown: Command execution failed")
+
+def _parse_error(output):
+    for line in output:
+        if  line.find("Could not get status of gateway.") > 0:
+            raise TtnCriticalError("CRTICAL: Gateway not found")
+
 
 def _run_cmd(argumentss):
     cmd = subprocess.Popen(
         args="%s %s" %(CMD_LINE, argumentss),
         shell=True,
+        env=CMD_ENV,
         stdout=subprocess.PIPE)
     exit_status = cmd.wait()
-    if exit_status != 0:    #Failed to run happily
-        raise TtnCheckError("Unknown: Command execution failed")
     output = cmd.communicate()[0]
     return exit_status, output.split("\n")
 
@@ -76,6 +87,12 @@ class TtnCheckError(Exception):
     """
     pass
 
+class TtnCriticalError(Exception):
+    """
+        Used when early parsing of string means the output should be
+        critical not unknown
+    """
+    pass
 
 if __name__ == "__main__":
     PARSER = argparse.ArgumentParser(
@@ -95,5 +112,8 @@ if __name__ == "__main__":
     except TtnCheckError as err:
         print str(err)
         exit(EXIT_UNKNOWN)
+    except TtnCriticalError as err:
+        print str(err)
+        exit(EXIT_CRITICAL)
     print MESSAGE
     exit(STATUS)
