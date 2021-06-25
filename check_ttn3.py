@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """
-Use the TTS API to determine the status of a gateway
-A simple wrapper to ttnctl to enable the status of gateways in
-the things network https://www.thethingsnetwork.org/ to be monitored
+Use the TTS API to determine the status of a gateway to enable the status of gateways to be monitored
 using icinga/nagios
 
 Author: Philip Basford
